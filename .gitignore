@@ -1,0 +1,10 @@
+.env
+node_modules/
+*.log
+.location.json
+.location.json.*.tmp
+
+.env.*
+!.env.example
+*.service
+*.bak

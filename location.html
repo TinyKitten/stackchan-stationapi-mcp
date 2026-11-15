@@ -1,0 +1,10 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>StackChanの設置場所</title><link rel="stylesheet" href="/location.css"><script src="/location.js" defer></script></head><body><main>
+<p class="eyebrow">STACKCHAN · STATIONAPI</p><h1>近くの駅を、<br>ここから探す。</h1>
+<p>このPCのブラウザで位置情報を取得します。位置と精度を確認し、設置場所として保存してください。</p>
+<section><h2>現在の設定</h2><p id="saved">読み込み中…</p><button id="clear" disabled>保存した位置を削除</button></section>
+<section><h2>ブラウザで測位</h2><p>「位置情報を取得」を押したら、ブラウザの位置情報へのアクセスを許可してください。</p>
+<button id="locate" class="primary" disabled>位置情報を取得</button>
+<p id="status" role="status" aria-live="polite"></p><p id="coordinates"></p><p id="accuracy"></p><ul id="stations"></ul>
+<button id="save" disabled>この位置を設置場所として保存</button></section>
+<p class="note">保存後はGeoIPより優先して使用します。測位失敗時は今の設定を維持します。PCを移動したら再取得してください。座標はこのPCに保存され、駅検索時にStationAPIへ送信されます。MCPで使うとAIにも渡されます。</p>
+</main></body></html>
