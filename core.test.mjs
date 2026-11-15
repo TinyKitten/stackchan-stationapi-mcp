@@ -24,7 +24,7 @@ test('upstream errors never become empty results',async()=>{
 });
 test('routes preserve recommended service and expose estimation caveat',async()=>{
  const routes=[{totalSeconds:600,legs:[{recommendedGroupId:123,trainTypes:[{groupId:123},{groupId:456}]}]}];
- const r=await callTool('connected_routes',{fromStationGroupId:1,toStationGroupId:2},{fetcher:ok({connectedRoutes:routes})});assert.deepEqual(r.results,routes);assert.match(r.timeBasis,/推定/);
+ const r=await callTool('connected_routes',{fromStationGroupId:1,toStationGroupId:2},{fetcher:ok({connectedRoutes:routes})});assert.deepEqual(r.results.map(({displayText,...route})=>route),routes);assert.equal(r.results[0].displayText,null);assert.match(r.timeBasis,/推定/);
 });
 test('nearby and line station queries retain direction and transport',async()=>{
  for(const [name,args,field] of [['nearby_stations',{latitude:35,longitude:139,transportType:'Bus'},'stationsNearby'],['line_stations',{lineId:1,directionId:0,transportType:'Bus'},'lineStations']]){

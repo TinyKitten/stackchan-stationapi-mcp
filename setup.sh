@@ -30,6 +30,7 @@ if [[ "${1:-}" == '--check' ]]; then
   "$node_path" core.test.mjs
   "$node_path" geo.test.mjs
   "$node_path" location.test.mjs
+  "$node_path" route-display.test.mjs
   exit 0
 fi
 if [[ ! -f .env ]]; then
@@ -42,6 +43,7 @@ fi
 "$node_path" core.test.mjs
   "$node_path" geo.test.mjs
   "$node_path" location.test.mjs
+  "$node_path" route-display.test.mjs
 project_dir="$PWD"
 if [[ "$project_dir" == *'%'* || "$project_dir" == *'"'* || "$project_dir" == *'\\'* ]]; then echo 'パスに使えない文字があります'; exit 1; fi
 mkdir -p "$HOME/.config/systemd/user"

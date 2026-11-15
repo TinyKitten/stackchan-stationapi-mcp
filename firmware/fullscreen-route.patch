@@ -1,0 +1,134 @@
+diff --git a/firmware/main/hal/board/stackchan_display.cc b/firmware/main/hal/board/stackchan_display.cc
+index b43b893..65a658f 100644
+--- a/firmware/main/hal/board/stackchan_display.cc
++++ b/firmware/main/hal/board/stackchan_display.cc
+@@ -198,6 +198,11 @@ StackChanAvatarDisplay::~StackChanAvatarDisplay()
+ {
+     ESP_LOGI(TAG, "Destroying StackChanAvatarDisplay");
+ 
++    if (route_panel_ != nullptr) {
++        lv_obj_delete(route_panel_);
++        route_panel_ = nullptr;
++    }
++
+     if (preview_timer_ != nullptr) {
+         esp_timer_stop(preview_timer_);
+         esp_timer_delete(preview_timer_);
+@@ -463,6 +468,7 @@ void StackChanAvatarDisplay::SetTheme(Theme* theme)
+     auto text_font  = lvgl_theme->text_font()->font();
+ 
+     stackchan.avatar().setSpeechTextFont((void*)text_font);
++    if (route_panel_) lv_obj_set_style_text_font(route_panel_, text_font, 0);
+ }
+ 
+ #include <hal/board/hal_bridge.h>
+@@ -571,3 +577,54 @@ void StackChanAvatarDisplay::SetStatus(const char* status)
+ void StackChanAvatarDisplay::ShowNotification(const char* notification, int duration_ms)
+ {
+ }
++
++// Persistent full-screen route, independent of speech and preview timeouts.
++bool StackChanAvatarDisplay::ShowRoute(const std::string& text)
++{
++    if (!setup_ui_called_ || text.empty() || text.size() > 4096 || text.find('\0') != std::string::npos) return false;
++    DisplayLockGuard lock(this);
++    if (route_panel_) lv_obj_delete(route_panel_);
++    route_panel_ = lv_obj_create(lv_layer_top());
++    lv_obj_set_size(route_panel_, LV_PCT(100), LV_PCT(100));
++    lv_obj_set_style_radius(route_panel_, 0, 0);
++    lv_obj_set_style_border_width(route_panel_, 0, 0);
++    lv_obj_set_style_pad_all(route_panel_, 10, 0);
++    lv_obj_set_style_bg_color(route_panel_, lv_color_hex(0x101820), 0);
++    lv_obj_set_style_bg_opa(route_panel_, LV_OPA_COVER, 0);
++    lv_obj_set_style_text_color(route_panel_, lv_color_white(), 0);
++    auto theme = static_cast<LvglTheme*>(current_theme_);
++    lv_obj_set_style_text_font(route_panel_, theme->text_font()->font(), 0);
++    lv_obj_remove_flag(route_panel_, LV_OBJ_FLAG_SCROLLABLE);
++    auto close = lv_button_create(route_panel_);
++    lv_obj_set_size(close, 90, 38);
++    lv_obj_align(close, LV_ALIGN_TOP_RIGHT, 0, 0);
++    auto caption = lv_label_create(close);
++    lv_label_set_text(caption, "閉じる");
++    lv_obj_center(caption);
++    lv_obj_add_event_cb(close, [](lv_event_t* event) {
++        auto self = static_cast<StackChanAvatarDisplay*>(lv_event_get_user_data(event));
++        // Event callbacks already hold the LVGL lock.
++        lv_obj_add_flag(self->route_panel_, LV_OBJ_FLAG_HIDDEN);
++    }, LV_EVENT_CLICKED, this);
++    auto heading = lv_label_create(route_panel_);
++    lv_label_set_text(heading, "経路案内");
++    lv_obj_align(heading, LV_ALIGN_TOP_LEFT, 0, 7);
++    auto body = lv_obj_create(route_panel_);
++    lv_obj_set_pos(body, 0, 46);
++    lv_obj_set_size(body, LV_PCT(100), 174);
++    lv_obj_set_style_bg_opa(body, LV_OPA_TRANSP, 0);
++    lv_obj_set_style_border_width(body, 0, 0);
++    lv_obj_set_style_pad_all(body, 0, 0);
++    lv_obj_set_scroll_dir(body, LV_DIR_VER);
++    auto label = lv_label_create(body);
++    lv_obj_set_width(label, LV_PCT(100));
++    lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
++    lv_label_set_text(label, text.c_str());
++    return true;
++}
++
++void StackChanAvatarDisplay::HideRoute()
++{
++    DisplayLockGuard lock(this);
++    if (route_panel_) lv_obj_add_flag(route_panel_, LV_OBJ_FLAG_HIDDEN);
++}
+diff --git a/firmware/main/hal/board/stackchan_display.h b/firmware/main/hal/board/stackchan_display.h
+index f16f1f3..600d4d9 100644
+--- a/firmware/main/hal/board/stackchan_display.h
++++ b/firmware/main/hal/board/stackchan_display.h
+@@ -25,6 +25,7 @@ private:
+     esp_timer_handle_t preview_timer_                = nullptr;
+     std::unique_ptr<LvglImage> preview_image_cached_ = nullptr;
+ 
++    lv_obj_t* route_panel_ = nullptr;
+     void CreateIdleMotionModifier();
+ 
+ protected:
+@@ -37,6 +38,8 @@ public:
+     virtual ~StackChanAvatarDisplay();
+ 
+     void InitializeLcdThemes();
++    bool ShowRoute(const std::string& text);
++    void HideRoute();
+ 
+     // Override Display methods to control Robot
+     virtual void SetEmotion(const char* emotion) override;
+diff --git a/firmware/main/hal/hal_mcp.cpp b/firmware/main/hal/hal_mcp.cpp
+index 0d73851..adaba67 100644
+--- a/firmware/main/hal/hal_mcp.cpp
++++ b/firmware/main/hal/hal_mcp.cpp
+@@ -4,6 +4,8 @@
+  * SPDX-License-Identifier: MIT
+  */
+ #include "hal.h"
++#include <board.h>
++#include "board/stackchan_display.h"
+ #include <mooncake_log.h>
+ #include <mcp_server.h>
+ #include <stackchan/stackchan.h>
+@@ -19,6 +21,20 @@ void Hal::xiaozhi_mcp_init()
+ 
+     // https://github.com/78/xiaozhi-esp32/blob/main/docs/mcp-usage.md
+     auto& mcp_server = McpServer::GetInstance();
++    mcp_server.AddTool("self.screen.show_route",
++        "Show a selected StationAPI route full-screen until closed. Pass connected_routes displayText verbatim as text. Do not invent route information.",
++        PropertyList({Property("text", kPropertyTypeString)}),
++        [](const PropertyList& properties) -> ReturnValue {
++            auto display = static_cast<StackChanAvatarDisplay*>(Board::GetInstance().GetDisplay());
++            return display->ShowRoute(properties["text"].value<std::string>());
++        });
++    mcp_server.AddTool("self.screen.hide_route", "Close route display and return to the face.",
++        PropertyList({}), [](const PropertyList&) -> ReturnValue {
++            auto display = static_cast<StackChanAvatarDisplay*>(Board::GetInstance().GetDisplay());
++            display->HideRoute();
++            return true;
++        });
++
+ 
+     // System Prompt：
+     // You can control the robot's head. Use get_yaw and get_pitch to sense current position. Use set_yaw for horizontal
