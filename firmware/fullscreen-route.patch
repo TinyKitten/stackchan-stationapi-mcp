@@ -1,5 +1,5 @@
 diff --git a/firmware/main/hal/board/stackchan_display.cc b/firmware/main/hal/board/stackchan_display.cc
-index b43b893..65a658f 100644
+index b43b893..e020de1 100644
 --- a/firmware/main/hal/board/stackchan_display.cc
 +++ b/firmware/main/hal/board/stackchan_display.cc
 @@ -198,6 +198,11 @@ StackChanAvatarDisplay::~StackChanAvatarDisplay()
@@ -22,7 +22,7 @@ index b43b893..65a658f 100644
  }
  
  #include <hal/board/hal_bridge.h>
-@@ -571,3 +577,54 @@ void StackChanAvatarDisplay::SetStatus(const char* status)
+@@ -571,3 +577,63 @@ void StackChanAvatarDisplay::SetStatus(const char* status)
  void StackChanAvatarDisplay::ShowNotification(const char* notification, int duration_ms)
  {
  }
@@ -38,7 +38,7 @@ index b43b893..65a658f 100644
 +    lv_obj_set_style_radius(route_panel_, 0, 0);
 +    lv_obj_set_style_border_width(route_panel_, 0, 0);
 +    lv_obj_set_style_pad_all(route_panel_, 10, 0);
-+    lv_obj_set_style_bg_color(route_panel_, lv_color_hex(0x101820), 0);
++    lv_obj_set_style_bg_color(route_panel_, lv_color_black(), 0);
 +    lv_obj_set_style_bg_opa(route_panel_, LV_OPA_COVER, 0);
 +    lv_obj_set_style_text_color(route_panel_, lv_color_white(), 0);
 +    auto theme = static_cast<LvglTheme*>(current_theme_);
@@ -46,8 +46,12 @@ index b43b893..65a658f 100644
 +    lv_obj_remove_flag(route_panel_, LV_OBJ_FLAG_SCROLLABLE);
 +    auto close = lv_button_create(route_panel_);
 +    lv_obj_set_size(close, 90, 38);
++    lv_obj_set_style_bg_color(close, lv_color_white(), 0);
++    lv_obj_set_style_bg_opa(close, LV_OPA_COVER, 0);
 +    lv_obj_align(close, LV_ALIGN_TOP_RIGHT, 0, 0);
 +    auto caption = lv_label_create(close);
++    lv_obj_set_style_text_color(caption, lv_color_black(), 0);
++    lv_obj_set_style_text_opa(caption, LV_OPA_COVER, 0);
 +    lv_label_set_text(caption, "閉じる");
 +    lv_obj_center(caption);
 +    lv_obj_add_event_cb(close, [](lv_event_t* event) {
@@ -56,6 +60,8 @@ index b43b893..65a658f 100644
 +        lv_obj_add_flag(self->route_panel_, LV_OBJ_FLAG_HIDDEN);
 +    }, LV_EVENT_CLICKED, this);
 +    auto heading = lv_label_create(route_panel_);
++    lv_obj_set_style_text_color(heading, lv_color_white(), 0);
++    lv_obj_set_style_text_opa(heading, LV_OPA_COVER, 0);
 +    lv_label_set_text(heading, "経路案内");
 +    lv_obj_align(heading, LV_ALIGN_TOP_LEFT, 0, 7);
 +    auto body = lv_obj_create(route_panel_);
@@ -66,6 +72,9 @@ index b43b893..65a658f 100644
 +    lv_obj_set_style_pad_all(body, 0, 0);
 +    lv_obj_set_scroll_dir(body, LV_DIR_VER);
 +    auto label = lv_label_create(body);
++    // Set label styles directly: the body theme may override inherited text color.
++    lv_obj_set_style_text_color(label, lv_color_white(), 0);
++    lv_obj_set_style_text_opa(label, LV_OPA_COVER, 0);
 +    lv_obj_set_width(label, LV_PCT(100));
 +    lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
 +    lv_label_set_text(label, text.c_str());
