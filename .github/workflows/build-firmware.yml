@@ -1,0 +1,86 @@
+name: Build ESP-IDF firmware
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/build-firmware.yml'
+      - 'firmware/**'
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/build-firmware.yml'
+      - 'firmware/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: esp-idf-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  firmware:
+    name: ESP32-S3 / ESP-IDF v6.1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install ESP-IDF host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            git wget flex bison gperf python3 python3-pip python3-venv \
+            cmake ninja-build ccache libffi-dev libssl-dev \
+            dfu-util libusb-1.0-0
+
+      - name: Build patched StackChan firmware
+        run: bash firmware/build.sh
+
+      - name: Verify firmware and flashing files
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          firmware = Path('firmware/.build/StackChan/firmware')
+          output = firmware / 'build-route'
+          required = [
+              'stack-chan.bin',
+              'bootloader/bootloader.bin',
+              'partition_table/partition-table.bin',
+              'flasher_args.json',
+          ]
+          for file in required:
+              if not (output / file).is_file() or not (output / file).stat().st_size:
+                  raise SystemExit(f'Missing or empty build output: {output / file}')
+
+          flash_files = json.loads((output / 'flasher_args.json').read_text()).get('flash_files', {})
+          if not flash_files:
+              raise SystemExit('No flash_files found in flasher_args.json')
+          for file in flash_files.values():
+              if not (output / file).is_file():
+                  raise SystemExit(f'Missing flash image referenced by manifest: {file}')
+
+          config = (firmware / 'sdkconfig.route').read_text()
+          for setting in ('CONFIG_IDF_TARGET="esp32s3"',
+                          'CONFIG_BOARD_TYPE_M5STACK_STACK_CHAN=y',
+                          'CONFIG_LANGUAGE_JA_JP=y'):
+              if setting not in config.splitlines():
+                  raise SystemExit(f'Expected sdkconfig setting missing: {setting}')
+          PY
+
+      - name: Upload flashable firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: stackchan-esp32s3-esp-idf-v6.1
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            firmware/.build/StackChan/firmware/build-route/*.bin
+            firmware/.build/StackChan/firmware/build-route/bootloader/*.bin
+            firmware/.build/StackChan/firmware/build-route/partition_table/*.bin
+            firmware/.build/StackChan/firmware/build-route/flasher_args.json
+            firmware/.build/StackChan/firmware/build-route/flash_args
