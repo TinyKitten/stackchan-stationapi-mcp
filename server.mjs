@@ -14,7 +14,7 @@ if(process.argv.includes('--stdio')) {
  try {endpoint=new URL(process.env.MCP_ENDPOINT);if(endpoint.protocol!=='wss:')throw Error();}
  catch {console.error('.env の MCP_ENDPOINT にStackChanアプリの wss:// 接続URLを設定してください。');process.exit(1);}
  let locationServer;
- try {locationServer=await startLocationUI();console.error('設置位置の設定: http://127.0.0.1:18765/');}
+ try {if(process.env.STATIONAPI_CLOUD!=='1'){locationServer=await startLocationUI();console.error('設置位置の設定: http://127.0.0.1:18765/');}}
  catch(e){console.error('設置位置の画面を起動できません: '+(e.code??'unknown'));}
  const shutdown=new AbortController();
  let socket, session;

@@ -1,0 +1,19 @@
+services:
+  - type: worker
+    name: stackchan-stationapi-mcp
+    runtime: node
+    plan: 0.5c-512mb
+    region: singapore
+    numInstances: 1
+    buildCommand: npm test
+    startCommand: npm start
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: STATIONAPI_CLOUD
+        value: "1"
+      - key: STATIONAPI_URL
+        value: https://gql-stg.trainlcd.app
+      - key: MCP_ENDPOINT
+        sync: false

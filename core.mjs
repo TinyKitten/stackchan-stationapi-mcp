@@ -1,6 +1,6 @@
 import {routeDisplayText,routeDisplayData} from './route-display.mjs';
 import {locateByIp} from './geo.mjs';
-import {loadSavedLocation} from './location-store.mjs';
+import {loadRuntimeLocation} from './runtime-location.mjs';
 const text = { type: 'string', minLength: 1, maxLength: 100 };
 const id = { type: 'integer', minimum: 1, maximum: 2147483647 };
 const limit = { type: 'integer', minimum: 1, maximum: 30, default: 10 };
@@ -10,7 +10,7 @@ const tool = (name, description, properties, required) => ({ name, description, 
 export const tools = [
  tool('search_stations','日本の駅・バス停を名前で検索する。同名候補は所在地・路線を確認し、勝手に選ばない。', {name:text, limit, transportType}, ['name']),
  tool('nearby_stations','指定座標に近い駅・バス停を取得する。ユーザーが指定した座標を使う。座標が不明で「ここ・近く・最寄り」を尋ねられたらnearby_stations_hereを使う。', {latitude:{type:'number',minimum:-90,maximum:90},longitude:{type:'number',minimum:-180,maximum:180},limit,transportType}, ['latitude','longitude']),
- tool('nearby_stations_here','「近くの駅」「ここの最寄り駅」を、保存されたブラウザ測位の設置座標を優先し、未保存ならPCの外向きIPアドレスのGeoIP推定座標で自動検索する。座標指定不要。既定は鉄道駅。バス停はtransportType=Bus。location.methodがGeoIPなら「IPからの推定では」、BrowserGeolocationなら「保存した設置位置では」と伝え、実際の最寄り駅とは断定しない。位置取得失敗時は駅を作り上げず地域名を確認する。', {limit,transportType:{...transportType,default:'Rail'}}, []),
+ tool('nearby_stations_here','「近くの駅」「ここの最寄り駅」を設定済みの設置座標で検索する。ローカル実行では保存したブラウザ測位、未保存ならPCのGeoIPを使う。クラウド実行では設置座標が必須。座標指定不要。既定は鉄道駅。バス停はtransportType=Bus。location.methodがGeoIPなら「IPからの推定では」、BrowserGeolocationなら「保存した設置位置では」、ConfiguredLocationなら「設定した設置位置では」と伝え、実際の最寄り駅とは断定しない。位置取得失敗時は駅を作り上げず地域名を確認する。', {limit,transportType:{...transportType,default:'Rail'}}, []),
  tool('search_lines','路線名から路線IDを検索する。同名候補はユーザーの意図を確認する。', {name:text,limit}, ['name']),
  tool('line_stations','検索で得た路線IDの駅・バス停一覧を取得する。バスの方向が必要な場合はdirectionIdを指定する。', {lineId:id,directionId:{type:'integer',minimum:0,maximum:1},transportType}, ['lineId']),
  tool('connected_routes','駅検索のgroupIdを用いて乗換経路を検索する。駅IDと取り違えない。画面表示を求められ、self.screen.show_route_cardが利用可能なら選択した経路のdisplayDataを改変せずdata引数に渡す（nullなら表示不可）。旧本体のself.screen.show_routeのみ利用可能なら、選択した経路のdisplayTextを改変せずtext引数に渡す。displayTextがnullの場合は表示不可。所要時間は推定で、時刻表・リアルタイムの発車時刻や遅延情報ではない。', {fromStationGroupId:id,toStationGroupId:id,sortBy:{type:'string',enum:['Recommended','ArrivalTime','TransferCount'],default:'Recommended'}}, ['fromStationGroupId','toStationGroupId'])
@@ -29,7 +29,7 @@ export function validate(schema, args) {
  }
  return out;
 }
-export async function callTool(name, args, {fetcher=fetch, endpoint=process.env.STATIONAPI_URL || 'https://gql-stg.trainlcd.app', signal, log=()=>{}, loadLocation=loadSavedLocation}={}) {
+export async function callTool(name, args, {fetcher=fetch, endpoint=process.env.STATIONAPI_URL || 'https://gql-stg.trainlcd.app', signal, log=()=>{}, loadLocation=loadRuntimeLocation}={}) {
  const definition=tools.find(t=>t.name===name);
  if (!definition) throw Error('未対応のツール');
  const v=validate(definition.inputSchema,args);
@@ -38,7 +38,7 @@ export async function callTool(name, args, {fetcher=fetch, endpoint=process.env.
   const location=await loadLocation() ?? await locateByIp({fetcher,signal,log});
   signal?.throwIfAborted();
   const nearby=await callTool('nearby_stations',{...v,latitude:location.latitude,longitude:location.longitude},{fetcher,endpoint,signal,log});
-  return {...nearby,location,distanceBasis:location.method==='GeoIP'?'距離はGeoIP推定座標からの距離で、実際の現在地からの距離ではありません。':'距離は保存された設置位置からの距離です。ブラウザ測位の誤差と保存後の移動は反映されません。'};
+  return {...nearby,location,distanceBasis:location.method==='GeoIP'?'距離はGeoIP推定座標からの距離で、実際の現在地からの距離ではありません。':location.method==='ConfiguredLocation'?'距離は設定されたStackChanの設置座標からの距離です。設定後の移動は反映されません。':'距離は保存された設置位置からの距離です。ブラウザ測位の誤差と保存後の移動は反映されません。'};
  }
  let query, field;
  switch(name) {

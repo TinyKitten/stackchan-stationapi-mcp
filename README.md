@@ -51,7 +51,21 @@ journalctl --user -u stationapi-mcp.service -n 20 --no-pager
 systemctl --user disable --now stationapi-mcp.service
 ```
 
-## 使い方
+## Renderで常時稼働
+
+`render.yaml`でBackground Workerを作成できます。Node.js 24、Singapore、512 MB・1インスタンスの構成です。料金は[Renderの料金表](https://render.com/pricing)を確認してください。外向きWebSocketのみを使用するため、公開URLやHTTPポートは不要です。
+
+1. RenderでこのリポジトリからBlueprintを作成する。
+2. `MCP_ENDPOINT`にStackChanアプリの秘密の接続URLを設定する。Gitやログには貼り付けない。
+3. PCの既存サービスが動いている場合は`systemctl --user stop stationapi-mcp.service`で止め、同じ接続URLへの二重接続を避ける。
+4. デプロイし、ログの「StackChan MCPに接続しました。」を確認する。本体から駅検索を実行してMCP応答まで確認する。
+5. 動作確認後、PCの自動起動を`systemctl --user disable stationapi-mcp.service`で解除する。切り戻す場合はRenderをSuspendしてからPCで`systemctl --user enable --now stationapi-mcp.service`を実行する。
+
+ビルド時に`npm test`を実行します。自動デプロイは無効にしているため、更新はRenderで手動デプロイしてください。
+
+クラウドでは`STATIONAPI_CLOUD=1`によりローカルの位置設定画面とGeoIPフォールバックを無効にします。「近くの駅」を使う場合はRenderの環境変数`STACKCHAN_LOCATION`に実際の設置座標をJSON（`latitude`と`longitude`の数値）で設定してください。再デプロイ後に反映されます。座標をGitに保存しないでください。未設定でも駅名・路線名・乗換検索は使えます。未設定時の最寄り検索は地域名の確認を求め、クラウドサーバーの所在地を使いません。
+
+## 会話例
 
 - 「東京駅には何線がある？」
 - 「山手線の駅を教えて」
