@@ -38,3 +38,11 @@ Nodeの29テストとパッチの適用チェック済み。2026-11-16にESP-IDF
 Ubuntuではシステム依存を用意してから `bash firmware/build.sh` を実行します。必要なaptパッケージはスクリプトの不足検出時に表示します。ESP-IDF v6.1とツールチェーンを `firmware/.build/` に導入し、専用ソースへパッチを適用、日本語設定でESP32-S3向けにビルドします。再実行可能で、既存ファームウェアのソースや本体は変更しません。ネットワーク接続が必要です。
 
 スクリプトの構文と不足依存の検出を確認済みです。依存導入後、同じビルド設定でバイナリ生成とパーティションサイズ検証の完了を確認しました。
+
+## GitHub Actionsによるビルド
+
+[Build ESP-IDF firmware](../.github/workflows/build-firmware.yml) は、ファームウェアやワークフロー自身を変更するPR、`master`へのpush、手動実行で起動します。ESP-IDF v6.1 / ESP32-S3 / StackChan / 日本語設定のビルドと書き込み用バイナリの生成を検証します。
+
+成功した実行のArtifactsから `stackchan-esp32s3-esp-idf-v6.1` を取得できます（保存期間14日）。CIでは実機への書き込みや表示動作の確認は行いません。
+
+master上のビルド成功後は、`firmware-<実行番号>` タグのGitHub Releaseを自動公開します。リリースには書き込み用ファイル一式の `stackchan-esp32s3-ja.zip` と `SHA256SUMS` を添付します。PRのビルドからは公開しません。
