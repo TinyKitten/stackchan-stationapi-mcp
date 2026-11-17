@@ -61,6 +61,7 @@ jobs:
           name: stackchan-esp32s3-${{ github.sha }}
           retention-days: 14
           if-no-files-found: error
+          include-hidden-files: true
           path: |
             firmware/.build/StackChan/firmware/build-route/**/*.bin
             firmware/.build/StackChan/firmware/build-route/flasher_args.json
