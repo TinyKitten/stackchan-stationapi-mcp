@@ -34,10 +34,17 @@ if [[ "$(git -C "$source_dir" rev-parse HEAD)" != "$revision" ]]; then
 fi
 if git -C "$source_dir" apply --reverse --check "$root/fullscreen-route.patch" 2>/dev/null; then
   echo '経路表示パッチは適用済みです。'
-else
-  git -C "$source_dir" apply --check "$root/fullscreen-route.patch"
+elif git -C "$source_dir" apply --check "$root/fullscreen-route.patch" 2>/dev/null; then
   git -C "$source_dir" apply "$root/fullscreen-route.patch"
+elif git -C "$source_dir" apply --check "$root/upgrade-route-v1.patch" 2>/dev/null; then
+  git -C "$source_dir" apply "$root/upgrade-route-v1.patch"
+else
+  echo '経路表示ソースに別の変更があります。新しいSTACKCHAN_BUILD_ROOTを指定してください。' >&2
+  exit 1
 fi
+# Route UI sources are maintained separately so parser tests use the exact device code.
+mkdir -p "$source_dir/firmware/main/hal/board/route"
+cp "$root/route/route_model.h" "$root/route/route_view.h" "$source_dir/firmware/main/hal/board/route/"
 cd "$source_dir/firmware"
 python fetch_repos.py
 # Keep the upstream defaults unchanged and use a separate Japanese build config.

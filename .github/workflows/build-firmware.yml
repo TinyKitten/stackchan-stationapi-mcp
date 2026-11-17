@@ -5,11 +5,15 @@ on:
     paths:
       - '.github/workflows/build-firmware.yml'
       - 'firmware/**'
+      - 'core*.mjs'
+      - 'route-display*.mjs'
   push:
     branches: [master]
     paths:
       - '.github/workflows/build-firmware.yml'
       - 'firmware/**'
+      - 'core*.mjs'
+      - 'route-display*.mjs'
   workflow_dispatch:
 
 permissions:
@@ -30,16 +34,34 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test MCP route data
+        run: npm test
+
       - name: Install ESP-IDF host dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             git wget flex bison gperf python3 python3-pip python3-venv \
             cmake ninja-build ccache libffi-dev libssl-dev \
-            dfu-util libusb-1.0-0
+            dfu-util libusb-1.0-0 fonts-noto-cjk
 
       - name: Build patched StackChan firmware
         run: bash firmware/build.sh
+
+      - name: Test device parser and LVGL screens on host
+        run: |
+          components="$PWD/firmware/.build/StackChan/firmware/managed_components"
+          bash firmware/tests/model_test.sh "$components/espressif__cjson/cJSON"
+          cmake -S firmware/tests -B firmware/.build/host-tests -G Ninja \
+            -DLVGL_ROOT="$components/lvgl__lvgl" \
+            -DCJSON_ROOT="$components/espressif__cjson/cJSON"
+          cmake --build firmware/.build/host-tests --parallel 4
+          cd firmware/.build/host-tests
+          ./preview /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
 
       - name: Verify firmware and flashing files
         run: |
