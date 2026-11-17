@@ -2,6 +2,14 @@
 
 [StationAPI](https://github.com/TrainLCD/StationAPI)を使い、StackChanとの会話から日本の駅・バス停・路線・乗換経路を検索するMCPサーバーです。XiaozhiのMCP接続先へWebSocketで接続します。
 
+## 画面イメージ
+
+| 01 / 全体を見る | 02 / 最初の区間 | 03 / 乗換後の区間 |
+| --- | --- | --- |
+| ![経路全体の概要](docs/images/route-overview.png) | ![最初の区間：光が丘から練馬](docs/images/route-section-1.png) | ![乗換後の区間：練馬から池袋](docs/images/route-section-2.png) |
+
+[Figmaのデザイン案](https://www.figma.com/design/qdzSgWwaMPM1fDuJaeQdyz?node-id=8-3)です。リッチ表示は未実装で、駅名・所要時間・配色はサンプルです。
+
 ## 必要なもの
 
 - Node.js 22.4以上（外部npmパッケージ不要）
