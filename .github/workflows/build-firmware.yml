@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install ESP-IDF host dependencies
         run: |
@@ -61,8 +63,8 @@ jobs:
           if not flash_files:
               raise SystemExit('No flash_files found in flasher_args.json')
           for file in flash_files.values():
-              if not (output / file).is_file():
-                  raise SystemExit(f'Missing flash image referenced by manifest: {file}')
+              if not (output / file).is_file() or not (output / file).stat().st_size:
+                  raise SystemExit(f'Missing or empty flash image referenced by manifest: {file}')
 
           config = (firmware / 'sdkconfig.route').read_text()
           for setting in ('CONFIG_IDF_TARGET="esp32s3"',
@@ -78,12 +80,13 @@ jobs:
           name: stackchan-esp32s3-esp-idf-v6.1
           retention-days: 14
           if-no-files-found: error
+          include-hidden-files: true
           path: |
-            firmware/.build/StackChan/firmware/build-route/*.bin
-            firmware/.build/StackChan/firmware/build-route/bootloader/*.bin
-            firmware/.build/StackChan/firmware/build-route/partition_table/*.bin
+            firmware/.build/StackChan/firmware/build-route/**/*.bin
             firmware/.build/StackChan/firmware/build-route/flasher_args.json
             firmware/.build/StackChan/firmware/build-route/flash_args
+            firmware/.build/StackChan/firmware/build-route/flash_project_args
+            firmware/.build/StackChan/firmware/sdkconfig.route
 
   release:
     name: Publish firmware release
