@@ -1,4 +1,4 @@
-import {routeDisplayText} from './route-display.mjs';
+import {routeDisplayText,routeDisplayData} from './route-display.mjs';
 import {locateByIp} from './geo.mjs';
 import {loadSavedLocation} from './location-store.mjs';
 const text = { type: 'string', minLength: 1, maxLength: 100 };
@@ -13,7 +13,7 @@ export const tools = [
  tool('nearby_stations_here','「近くの駅」「ここの最寄り駅」を、保存されたブラウザ測位の設置座標を優先し、未保存ならPCの外向きIPアドレスのGeoIP推定座標で自動検索する。座標指定不要。既定は鉄道駅。バス停はtransportType=Bus。location.methodがGeoIPなら「IPからの推定では」、BrowserGeolocationなら「保存した設置位置では」と伝え、実際の最寄り駅とは断定しない。位置取得失敗時は駅を作り上げず地域名を確認する。', {limit,transportType:{...transportType,default:'Rail'}}, []),
  tool('search_lines','路線名から路線IDを検索する。同名候補はユーザーの意図を確認する。', {name:text,limit}, ['name']),
  tool('line_stations','検索で得た路線IDの駅・バス停一覧を取得する。バスの方向が必要な場合はdirectionIdを指定する。', {lineId:id,directionId:{type:'integer',minimum:0,maximum:1},transportType}, ['lineId']),
- tool('connected_routes','駅検索のgroupIdを用いて乗換経路を検索する。駅IDと取り違えない。画面表示を求められ、self.screen.show_routeが利用可能なら、選択した経路のdisplayTextを改変せずtext引数に渡す。displayTextがnullの場合は表示不可。所要時間は推定で、時刻表・リアルタイムの発車時刻や遅延情報ではない。', {fromStationGroupId:id,toStationGroupId:id,sortBy:{type:'string',enum:['Recommended','ArrivalTime','TransferCount'],default:'Recommended'}}, ['fromStationGroupId','toStationGroupId'])
+ tool('connected_routes','駅検索のgroupIdを用いて乗換経路を検索する。駅IDと取り違えない。画面表示を求められ、self.screen.show_route_cardが利用可能なら選択した経路のdisplayDataを改変せずdata引数に渡す（nullなら表示不可）。旧本体のself.screen.show_routeのみ利用可能なら、選択した経路のdisplayTextを改変せずtext引数に渡す。displayTextがnullの場合は表示不可。所要時間は推定で、時刻表・リアルタイムの発車時刻や遅延情報ではない。', {fromStationGroupId:id,toStationGroupId:id,sortBy:{type:'string',enum:['Recommended','ArrivalTime','TransferCount'],default:'Recommended'}}, ['fromStationGroupId','toStationGroupId'])
 ];
 export function validate(schema, args) {
  if (!args || typeof args !== 'object' || Array.isArray(args)) throw Error('引数はオブジェクトで指定してください');
@@ -46,7 +46,7 @@ export async function callTool(name, args, {fetcher=fetch, endpoint=process.env.
  case 'nearby_stations': field='stationsNearby'; query=`query($latitude:Float!,$longitude:Float!,$limit:Int,$transportType:TransportType){${field}(latitude:$latitude,longitude:$longitude,limit:$limit,transportType:$transportType){${stationFields} distance}}`; break;
  case 'search_lines': field='linesByName'; query=`query($name:String!,$limit:Int){${field}(name:$name,limit:$limit){id nameShort nameFull transportType company{name}}}`; break;
  case 'line_stations': field='lineStations'; query=`query($lineId:Int!,$directionId:Int,$transportType:TransportType){${field}(lineId:$lineId,directionId:$directionId,transportType:$transportType){${stationFields} stopCondition}}`; break;
- case 'connected_routes': field='connectedRoutes'; query=`query($fromStationGroupId:Int!,$toStationGroupId:Int!,$sortBy:ConnectedRouteSort){${field}(fromStationGroupId:$fromStationGroupId,toStationGroupId:$toStationGroupId,sortBy:$sortBy){totalSeconds legs{recommendedGroupId fromStation{id groupId name} toStation{id groupId name} trainTypes{groupId name lines{id nameShort}}}}}`; break;
+ case 'connected_routes': field='connectedRoutes'; query=`query($fromStationGroupId:Int!,$toStationGroupId:Int!,$sortBy:ConnectedRouteSort){${field}(fromStationGroupId:$fromStationGroupId,toStationGroupId:$toStationGroupId,sortBy:$sortBy){totalSeconds legs{recommendedGroupId fromStation{id groupId name} toStation{id groupId name} trainTypes{groupId name lines{id nameShort color}}}}}`; break;
  }
  const timeout=AbortSignal.timeout(20000);
  const response=await fetcher(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,variables:v}),signal:signal ? AbortSignal.any([signal,timeout]) : timeout});
@@ -58,7 +58,7 @@ export async function callTool(name, args, {fetcher=fetch, endpoint=process.env.
   throw Error('StationAPIがGraphQLエラーを返しました。空の検索結果ではありません。');
  }
  if (!body.data || !Array.isArray(body.data[field])) throw Error('StationAPIの応答形式が不正です');
- return {source:'StationAPI', ...(name==='connected_routes'?{timeBasis:'推定所要時間。時刻表・運行状況は未反映。',selectionRule:'各区間のrecommendedGroupIdが評価済み種別。trainTypesは選択可能な代替種別を含む。'}:{}), results:name==='connected_routes'?body.data[field].map(route=>({...route,displayText:routeDisplayText(route)})):body.data[field]};
+ return {source:'StationAPI', ...(name==='connected_routes'?{timeBasis:'推定所要時間。時刻表・運行状況は未反映。',selectionRule:'各区間のrecommendedGroupIdが評価済み種別。trainTypesは選択可能な代替種別を含む。'}:{}), results:name==='connected_routes'?body.data[field].map(route=>({...route,displayText:routeDisplayText(route),displayData:routeDisplayData(route)})):body.data[field]};
 }
 export function createSession(options={}) {
  let initialized=false;
