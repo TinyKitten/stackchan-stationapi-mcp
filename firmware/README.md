@@ -39,12 +39,10 @@ Ubuntuではシステム依存を用意してから `bash firmware/build.sh` を
 
 スクリプトの構文と不足依存の検出を確認済みです。依存導入後、同じビルド設定でバイナリ生成とパーティションサイズ検証の完了を確認しました。
 
-## GitHub Actionsでのビルド
+## GitHub Actionsによるビルド
 
-[ESP-IDF firmware build](../.github/workflows/firmware-esp-idf.yml) は、ファームウェア関連ファイル・ワークフローの変更を含むPR、`master`へのpush、手動実行（`workflow_dispatch`）で起動します。
+[Build ESP-IDF firmware](../.github/workflows/build-firmware.yml) は、ファームウェアやワークフロー自身を変更するPR、`master`へのpush、手動実行で起動します。ESP-IDF v6.1 / ESP32-S3 / StackChan / 日本語設定のビルドと書き込み用バイナリの生成を検証します。
 
-Ubuntu 24.04上で依存パッケージを導入し、既存の `firmware/build.sh` を使ってESP-IDF v6.1・ESP32-S3・日本語設定でビルドします。完了後は `flasher_args.json` に記載された書き込み対象のバイナリを検証します。
+成功した実行のArtifactsから `stackchan-esp32s3-esp-idf-v6.1` を取得できます（保存期間14日）。`build-route/` 以下の書き込み用バイナリ・メタデータと `sdkconfig.route` を収録します。CIでは実機への書き込みや表示動作の確認は行いません。
 
-成功した実行の **Artifacts** から `stackchan-esp32s3-<commit SHA>` を取得できます（保存期間14日）。`build-route/` 以下にファームウェアの `.bin`、`flasher_args.json`、書き込み引数を収録し、`sdkconfig.route` も含めます。
-
-Actionsはビルドと成果物の保存までを行い、実機への書き込み・画面表示の検証は行いません。
+master上のビルド成功後は、`firmware-<実行番号>` タグのGitHub Releaseを自動公開します。リリースには書き込み用ファイル一式の `stackchan-esp32s3-ja.zip` と `SHA256SUMS` を添付します。PRのビルドからは公開しません。
