@@ -41,8 +41,4 @@ Ubuntuではシステム依存を用意してから `bash firmware/build.sh` を
 
 ## GitHub Actionsによるビルド
 
-[Build ESP-IDF firmware](../.github/workflows/build-firmware.yml) は、`firmware/**` またはワークフロー自身に変更があるプルリクエスト、`master` へのpush、手動実行で起動します。
-
-CIは既存の `bash firmware/build.sh` をそのまま実行し、ESP-IDF v6.1、ESP32-S3、StackChan、日本語設定のビルド結果を検証します。書き込みマニフェスト `flasher_args.json` に含まれる各バイナリの存在も確認します。
-
-成功するとActions実行画面のArtifactsに `stackchan-esp32s3-esp-idf-v6.1` を14日間保存します。アプリ、ブートローダー、パーティションテーブルのバイナリと書き込み用ファイルが含まれます。**CIは本体へ書き込みません。** ビルド成功は実機での表示・タッチ操作・日本語フォントの動作保証ではありません。
+ESP-IDF v6.1によるCIビルド、成果物の取得と検証範囲は[CI手順](CI.md)を参照してください。CIによる実機への書き込みは行いません。
