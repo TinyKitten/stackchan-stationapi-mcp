@@ -36,7 +36,7 @@ test('rich data has neutral fallback, never invents service or time',()=>{
  assert.equal(JSON.parse(routeDisplayData({legs:[multi]})).legs[0].color,'B9CCD7');
 });
 test('rich payload rejects invalid bounds and preserves all thirty legs',()=>{
- for(const route of [null,{legs:[]},{legs:[{}]},{legs:[{...leg,toStation:{name:'駅\u0000'}}]},{legs:[{...leg,toStation:{name:'駅'.repeat(86)}}]},{legs:Array(31).fill(leg)},{totalSeconds:Infinity,legs:[]}])assert.equal(routeDisplayData(route),null);
+ for(const route of [null,{legs:[]},{legs:[{}]},{legs:[{...leg,toStation:{name:'駅\u0000'}}]},{legs:[{...leg,toStation:{name:'駅'.repeat(86)}}]},{legs:Array(31).fill(leg)}])assert.equal(routeDisplayData(route),null);
  const data=JSON.parse(routeDisplayData({legs:Array(30).fill(leg)}));assert.equal(data.legs.length,30);
  assert.equal(routeDisplayData({totalSeconds:6000000,legs:[leg]}),null);
 });
@@ -47,4 +47,11 @@ test('connected_routes queries color and exposes both protocols',async()=>{
   return {ok:true,json:async()=>({data:{connectedRoutes:[route]}})};
  }});
  assert.equal(result.results[0].displayData,routeDisplayData(route));assert.equal(result.results[0].displayText,routeDisplayText(route));assert.equal(route.displayData,undefined);
+});
+
+test('invalid or missing durations preserve a valid route with unknown minutes',()=>{
+ for(const totalSeconds of [Infinity,-Infinity,NaN,-1,undefined]) {
+  const data=JSON.parse(routeDisplayData({totalSeconds,legs:[leg]}));
+  assert.equal(data.minutes,null);assert.equal(data.legs.length,1);
+ }
 });

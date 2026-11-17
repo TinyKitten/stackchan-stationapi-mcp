@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | ![経路全体の概要](docs/images/route-overview.png) | ![最初の区間：光が丘から練馬](docs/images/route-section-1.png) | ![乗換後の区間：練馬から池袋](docs/images/route-section-2.png) |
 
-[Figmaのデザイン案](https://www.figma.com/design/qdzSgWwaMPM1fDuJaeQdyz?node-id=8-3)です。リッチ表示は未実装で、駅名・所要時間・配色はサンプルです。
+[Figmaのデザイン案](https://www.figma.com/design/qdzSgWwaMPM1fDuJaeQdyz?node-id=8-3)です。駅名・所要時間・配色はサンプルです。
 
 ## 必要なもの
 

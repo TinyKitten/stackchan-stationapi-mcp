@@ -13,4 +13,4 @@ cd firmware/.build/host-tests
 ./preview /usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
 ```
 
-ホスト側にはC/C++コンパイラー、CMake、Ninja、`fonts-noto-cjk`が必要です。実際の`route_view.h`をLVGLのソフトウェア描画で動かし、3画面をPPMへ出力します。区間ボタン、閉じる、再表示、30区間のスクロール、フォント変更を検証します。フォントはホストのNoto Sans CJKを使うため、実機のビットマップフォントとはラスタライズが異なります。実機のタッチ精度・速度・音声同時動作を保証するテストではありません。
+ホスト側にはC/C++コンパイラー、CMake、Ninja、`fonts-noto-cjk`が必要です。実際の`route_view.h`をLVGLのソフトウェア描画で動かし、3画面をPPMへ出力します。区間ボタンの前進・戻る後の見出しと発着駅、閉じる、再表示、30区間で路線バーと余白からドラッグした際のスクロール、フォント変更を検証します。フォントはホストのNoto Sans CJKを使うため、実機のビットマップフォントとはラスタライズが異なります。実機のタッチ精度・速度・音声同時動作を保証するテストではありません。

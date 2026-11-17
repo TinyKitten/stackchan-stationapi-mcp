@@ -86,6 +86,7 @@ class View {
         auto body = Box(root_, 10, 68, 300, 110, 0x12202A, 8);
         if (page_ == 0) {
             lv_obj_add_flag(body, LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_add_flag(body, LV_OBJ_FLAG_CLICKABLE);
             lv_obj_set_scroll_dir(body, LV_DIR_VER);
             int y = 5;
             for (size_t i = 0; i < route_.legs.size(); ++i) {
