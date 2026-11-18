@@ -82,6 +82,25 @@ int main(int argc, char** argv) {
     }
     lv_indev_delete(pointer);
     view.SetFont(font);view.Hide();
+    // A direct route has only one overview button, and both return and close work.
+    auto direct=route;direct.legs.resize(1);
+    view.Show(direct,font);
+    lv_obj_send_event(lv_obj_get_child(root,4),LV_EVENT_CLICKED,nullptr);
+    AssertPage(root,"区間 1/1","光が丘","練馬");
+    int overview_buttons=0;
+    for(uint32_t i=0;i<lv_obj_get_child_count(root);++i) {
+        auto child=lv_obj_get_child(root,i);
+        if(lv_obj_has_flag(child,LV_OBJ_FLAG_CLICKABLE) && HasText(child,"概要")) ++overview_buttons;
+    }
+    assert(overview_buttons==1);
+    assert(HasText(lv_obj_get_child(root,4),"概要"));
+    assert(HasText(lv_obj_get_child(root,5),"閉じる"));
+    Snapshot("direct.ppm");
+    lv_obj_send_event(lv_obj_get_child(root,4),LV_EVENT_CLICKED,nullptr);
+    AssertPage(root,"経路概要","光が丘","練馬");
+    lv_obj_send_event(lv_obj_get_child(root,4),LV_EVENT_CLICKED,nullptr);
+    lv_obj_send_event(lv_obj_get_child(root,5),LV_EVENT_CLICKED,nullptr);
+    assert(lv_obj_has_flag(root,LV_OBJ_FLAG_HIDDEN));
     }
     lv_tiny_ttf_destroy(font);
     lv_display_delete(display);
