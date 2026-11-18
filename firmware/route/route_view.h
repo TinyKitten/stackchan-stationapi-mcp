@@ -118,7 +118,9 @@ class View {
             Text(body, 36, 77, 156, 28, leg.to);
             Text(body, 200, 77, 90, 17, page_ == static_cast<int>(route_.legs.size()) ? "目的地" : "ここで乗換");
             Button(10, 110, page_ == 1 ? "概要" : "前の区間", Previous(page_));
-            Button(128, 94, page_ == static_cast<int>(route_.legs.size()) ? "概要" : "次の区間", Next(page_, route_.legs.size()));
+            if (route_.legs.size() > 1) {
+                Button(128, 94, page_ == static_cast<int>(route_.legs.size()) ? "概要" : "次の区間", Next(page_, route_.legs.size()));
+            }
         }
         Button(230, 80, "閉じる", -1);
     }
